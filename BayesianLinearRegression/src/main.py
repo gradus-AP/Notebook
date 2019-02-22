@@ -3,7 +3,7 @@ from LinearRegression import LinearRegression
 import pandas as pd
 """
 Test data (3 attributions and 20 samples) 
-Z | x_0, x_1 ~ Normal(1.0 + 3.0 * x_0 + 0.70 * x_1, 1.0)
+Z | x_0, x_1 ~ Normal(2.0 + 3.0 * x_0 + 0.70 * x_1, 1.0)
 """
 df = pd.read_csv('.\\.\\test_data.csv')
 
