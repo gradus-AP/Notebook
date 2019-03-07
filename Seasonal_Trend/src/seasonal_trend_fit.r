@@ -1,9 +1,9 @@
 #'description
 #'Fitting state space model to data UKgas.
 #'Model
-#'We consider a decomposition of into dwo sequences 
-#'d_t log(origin_sequence)= trend[t] + season[t] + err[t], err[t] ~ i.i.d. Normal(0, sigma ^2)
-#',where d_t denotes difference.
+#'We consider a decomposition of into three sequences 
+#'log(origin_sequence)= trend + random_walk[t] + season[t] + err[t]
+#', where err[t] ~ i.i.d. Normal(0, sigma ^2)
 setwd("C:\\Users\\Notebook\\Seasonal_Trend\\src")
 library(rstan)
 library(ggplot2)
