@@ -1,6 +1,6 @@
 //Time-invariant Gaussian State Space Model
-//z[] : observed var. with values in vector[obs_dim]
-//x[] : state var. with values in vector[state_dim]
+//z[] : observed var. with values in real[obs_dim]
+//x[] : state var. with values in real[state_dim]
 //@transition equation
 //x[t+1] = F * x[t] + H * W[t], W[t] ~ i.i.d. Normal(O, W)
 //@observation equation
@@ -47,8 +47,9 @@ data {
 
 parameters {
   //parameter of initial state vector
-  vector[4] x_init;
+  vector[5] x_init;
   real<lower = 0> tau_trend;
+  real<lower = 0> tau_rand;
   real<lower = 0> tau_season;
 }
 
@@ -73,11 +74,11 @@ transformed parameters {
   matrix[state_dim, obs_dim] K[T];
 
   //generate F, G
-  F = [[1, 0,0,0],[0,0,1,0], [0,0,0,1], [0,-1,-1,-1]];
-  G = [[1, 0, 0, 1]];
+  F = [[1,0,0,0,0],[1,1,0,0,0],[0,0,0,1,0], [0,0,0,0,1], [0,0,-1,-1,-1]];
+  G = [[0,1, 0, 0, 1]];
   
   //generate Q_init
-  Q_init = diag_matrix(append_row(tau_trend, rep_vector(tau_season, 3)));
+  Q_init = diag_matrix([tau_trend, tau_rand, tau_season, tau_season, tau_season]');
 
   x_pred[1] = x_init;
   Q_pred[1] = Q_init;
@@ -98,6 +99,7 @@ transformed parameters {
 
 model {
   tau_trend ~ inv_gamma(1.0, 1.0);
+  tau_rand ~ inv_gamma(1.0, 1.0);
   tau_season ~ inv_gamma(1.0, 1.0);
   
   for (t in 1:T) {

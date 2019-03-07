@@ -25,16 +25,21 @@ ggplot <- ggplot + geom_segment(mapping = aes(xend = lag, yend = 0))
 plot(ggplot)
 #high auto correlationwith lag = 4
 
-z_log <- log(z)
-diff <- matrix(diff(z_log)[1:len - 1], ncol = 1)
 
-#model random walk plus seasonal trend
+#log
+z_log <- matrix(log(z), nrow = len)
+
+#check
+plot(z_log)
+plot(filter(z_log, c(1, 1, 1, 1))/4)
+acf(z_log)
+
 W = rbind(c(0.1, 0.0), c(0.0, 0.1))
 V = matrix(c(0.1), nrow = 1)
-H = matrix(c(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), nrow = 4)
+H = matrix(c(0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), nrow = 5)
 
-data <- list(T = len - 1,state_dim =  as.integer(4),obs_dim = as.integer(1), l = as.integer(2)
-             ,z = diff, W = W,V = V,H = H)
+data <- list(T = len ,state_dim =  as.integer(5),obs_dim = as.integer(1), l = as.integer(2)
+             ,z = z_log, W = W,V = V,H = H)
 
 #sampling @stan
 fit <- stan(file='./model.stan',data = data)
@@ -42,26 +47,27 @@ fit <- stan(file='./model.stan',data = data)
 summary(fit)$summary
 
 #posterior plot
-stan_hist(fit, pars = c('x_init', 'tau_trend', 'tau_season'))
+stan_hist(fit, pars = c('x_init', 'tau_trend', 'tau_rand', 'tau_season'))
 
-ind_of_trend_1 = 43
-ind_of_seasonal_trend_1 = 46
+ind_of_trend_1 = 64
+ind_of_rand_1 = 65
+ind_of_seasonal_trend_1 = 68
 
-trend <- summary(fit)$summary[seq(ind_of_trend_1, ind_of_trend_1 + 4 * (len -1) -1,4),]
-seasonal_trend <- summary(fit)$summary[seq(ind_of_seasonal_trend_1, ind_of_seasonal_trend_1 + 4 * (len -1) -1,4),]
+trend <- summary(fit)$summary[seq(ind_of_trend_1, ind_of_trend_1 + 5 * len -1,5),]
+random_walk <- summary(fit)$summary[seq(ind_of_rand_1, ind_of_rand_1 + 5 * len -1,5),]
+seasonal_trend <- summary(fit)$summary[seq(ind_of_seasonal_trend_1, ind_of_seasonal_trend_1 + 5 * len -1,5),]
 
-df <- data.frame(time = seq(1, len -1, 1), trend = trend[,'mean'], seasonal_trend = seasonal_trend[,'mean'])
+df <- data.frame(time = seq(1, len , 1), trend = trend[,'mean'], random_walk = random_walk[,'mean'], seasonal_trend = seasonal_trend[,'mean'])
 df
-ggplot <- ggplot(data = df, aes(time)) 
+ggplot <- ggplot(data = df, aes(time))
 ggplot <- ggplot + geom_line(aes(y =  trend), colour='#000099')
+ggplot <- ggplot + geom_line(aes(y =  random_walk), colour='#339900')
 ggplot <- ggplot + geom_line(aes(y =  seasonal_trend), colour='#D55E00')
 plot(ggplot)
 
-estimate <- exp(cumsum(trend[,'mean'] + seasonal_trend[,'mean']))
-estimate <- append(1,estimate, after = 1) * z[1]
-
-#estimate vs. origin sequence
-df <- data.frame(time = seq(1, len, 1), estimate = estimate, origin_seq = z)
+#estimate vs log(origin sequence)
+estimate <- trend[,'mean'] + random_walk[,'mean'] + seasonal_trend[,'mean']
+df <- data.frame(time = seq(1, len, 1), estimate = estimate, origin_seq = z_log)
 
 ggplot <- ggplot(data = df, aes(time)) 
 ggplot <- ggplot + geom_line(aes(y =  estimate), colour='#000099')
